@@ -32,4 +32,36 @@ describe("Sunrise library", function () {
             expect(calculated).toEqual(2453064.5);
         });
     });
+
+    describe("GMST calculation", function(){
+        //Astronomical Phenomena for the Year 2012:
+        //http://books.google.pl/books?id=ZnNrepLivYEC&lpg=PA17&ots=tmzu0w_Opi&dq=GMST%200hUT&hl=pl&pg=PA17#v=onepage&q=GMST%200hUT&f=false
+        describe("according to tables from the Astronomical Phenomena for the Year 2012", function(){
+            var valuesAt0 = [6.6050, 8.6420, 10.5476, 12.5846, 14.5559, 16.5929, 18.5642, 20.6012, 22.6382, 0.6095, 2.6465, 4.6178];
+            var tabledGMST = function(day, month){
+                return valuesAt0[month] + 0.06571 * day;
+            };
+
+            it("should be valid for 1st, 3rd, 24th, 28th of January 2012", function(){
+               for( var d in [1,3,24,28] ){
+                var val = sunriser.calcGMST(new Date(Date.UTC(2012, 0, d)));
+                expect(val).toBeCloseTo(tabledGMST(d,0));
+               }
+            });
+
+            it("should be valid for 1st, 3rd, 24th, 28th of September 2012", function(){
+                for( var d in [1,3,24,28] ){
+                    var val = sunriser.calcGMST(new Date(Date.UTC(2012, 8, d)));
+                    expect(val).toBeCloseTo(tabledGMST(d,8));
+                }
+            });
+
+            it("should be valid for 1st, 5th, 7th, 9th, 22nd, 25th and 29th of December 2012", function(){
+                for( var d in [1,5,7,9,22,25,29] ){
+                    var val = sunriser.calcGMST(new Date(Date.UTC(2012, 11, d)));
+                    expect(val).toBeCloseTo(tabledGMST(d,11));
+                }
+            });
+        });
+    });
 });
