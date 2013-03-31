@@ -65,9 +65,154 @@ describe("Sunrise library", function () {
         });
     });
 
-    describe("Sunrise and sunset calculation", function(){
-        it("Should calculate sunrise and sunset time for March, 18th 2012 in Krakow (50°3′41″N 19°56′18″E)", function(){
-            console.log(sunriser.sunTimes({d:50, m:3, s:41}, new Date(Date.UTC(2012, 2, 18))));
+    describe("Units converter", function(){
+        beforeEach(function() {
+            this.addMatchers({
+                toBeLike: function(expected) {
+                    var actual = this.actual;
+                    var notText = this.isNot ? " not" : "";
+                    //fault tolerance in minutes
+                    var result = true;
+                    for( var field in expected ){
+                        if(expected.hasOwnProperty(field)){
+                            //Checking if fields have the same value
+                            //if expected field is a number we chec if both fields (actual and expected) are number
+                            //and if so we use Math.round() and check if values are equal. If round on actual field returns NaN it's false.
+                            if(
+                                ((actual[field] !== expected[field]) &&
+                                ((typeof expected[field]) !== "number")) ||
+                                ((typeof actual[field] !== typeof expected[field])) ||
+                                 (!isFinite(Math.round(actual[field]))) ||
+                                 (Math.round(actual[field]) !== Math.round(expected[field]))
+                               ){
+
+                                var actual_text = (typeof actual[field]) + " acutal[" + field + "] = " + actual[field];
+                                var expected_text = (typeof expected[field]) + " expected[" + field + "] = " + expected[field];
+                                result = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    this.message = function () {
+                        return "Expected " + actual_text + notText + " to be like " + expected_text;
+                    };
+                    return result;
+                }
+            });
+        });
+
+        it("Should convert decimal degrees value to radians", function(){
+
+            var tests = [[-90, -Math.PI/2],[0,0], [16.0,0.27925268], [90,1.570796327], [270,4.71238898], [360,2*Math.PI]];
+            for( var i = 0; i<tests.length; i++ ){
+                var x = tests[i][0];
+                var val = sunriser.converter.decToRad(x);
+                expect(val).toBeCloseTo(tests[i][1]);
+                expect(sunriser.converter.radToDec(val)).toBeCloseTo(x);
+            }
+        });
+
+        it("Should convert time to degree value", function(){
+            var tests = [
+                [{h: 12, m: 0, s: 0}, {d: 180, m: 0, s: 0}],
+                [{h: 23, m: 30, s: 30}, {d: 352, m: 37, s: 30}]
+            ];
+            for( var i = 0; i<tests.length; i++ ){
+                var x = tests[i][0];
+                var val = sunriser.converter.timeToDeg(x);
+                expect(val).toBeLike(tests[i][1]);
+                expect(sunriser.converter.degToTime(val)).toBeLike(tests[i][0]);
+            }
+        });
+
+
+        it("Should convert degrees to decimal value", function(){
+            var tests = [
+                [{d: 0, m: 0, s: 0}, 0],
+                [{d: 360, m: 0, s: 0}, 360],
+                [{d: 123, m: 56, s: 32}, 123.9422222222]
+            ];
+            for( var i = 0; i<tests.length; i++ ){
+                var x = tests[i][0];
+                var val = sunriser.converter.degToDec(x);
+                expect(val).toBeCloseTo(tests[i][1]);
+            }
+        });
+
+        it("Should convert decimal degrees to time", function(){
+            var tests = [
+                [360, {h: 24, m: 0, s: 0}],
+                [180.5, {h: 12, m: 2, s: 0}],
+                [187.5625, {h: 12, m: 30, s: 15}]
+            ];
+            for( var i = 0; i<tests.length; i++ ){
+                var x = tests[i][0];
+                var val = sunriser.converter.decToTime(x);
+                expect(val).toBeLike(tests[i][1]);
+            }
+        });
+
+    });
+
+    describe("Sunrise and sunset calculation in UTC", function(){
+        beforeEach(function() {
+            this.addMatchers({
+                toBeAroundTime: function(expected) {
+                    var actual = this.actual;
+                    var notText = this.isNot ? "do not" : "";
+
+                    var helperConverter = function(time){
+                        return time.h + time.m / 60 + (time.s ? time.s / 3600 : 0);
+                    };
+
+                    //fault tolerance in minutes
+                    var tolerance_min = 1;
+
+                    this.message = function () {
+                        return ("Expected sunrise at " + actual.rise.h + ":" + actual.rise.m + " or sunset at " + actual.set.h + ":" + actual.set.m +
+                            notText + " match " + expected.rise.h + ":" + expected.rise.m + " or sunset at " +  + expected.set.h + ":" + expected.set.m + " with tolerance " + tolerance_min + " min");
+                    };
+
+                    var actual_rise_hours = helperConverter(actual.rise);
+                    var actual_set_hours = helperConverter(actual.set);
+                    var expected_rise_hours = helperConverter(expected.rise);
+                    var expected_set_hours = helperConverter(expected.set);
+
+                    return (actual_rise_hours >= (expected_rise_hours - (tolerance_min / 60))) &&
+                           (actual_rise_hours <= (expected_rise_hours + (tolerance_min / 60))) &&
+                           (actual_set_hours >= (expected_set_hours - (tolerance_min / 60))) &&
+                           (actual_set_hours <= (expected_set_hours + (tolerance_min / 60)));
+                }
+            });
+        });
+        //times obtained from various sites around the internet.
+        it("should calculate sunrise and sunset time for March, 18th 2012 in Krakow (50,3,41N 19,56,18E)", function(){
+            sunriser.
+                setDate(new Date(Date.UTC(2012, 2, 18))).
+                setLocation({"latitude":{d:50, m:3, s:41}, "longitude":{d:19, m:56, s:18}});
+
+            var res = sunriser.getTimes();
+            expect(res).toBeAroundTime({rise: {h: 4, m: 47} ,set: {h: 16, m: 51}});
+            //console.log(sunriser.sunTimes({d:50, m:3, s:41}, new Date(Date.UTC(2012, 2, 18))));
+        });
+
+        it("Should calculate sunrise and sunset time for September, 22nd 2015 in San Francisco (37,46,45N 122,25,09,W)", function(){
+            sunriser.
+                setDate(new Date(Date.UTC(2015, 8, 22))).
+                setLocation({"latitude":{d:37, m:36, s:45}, "longitude":{d:-122, m:-25, s:-9}});
+
+            var res = sunriser.getTimes();
+            expect(res).toBeAroundTime({rise: {h: 13, m: 57} ,set: {h: 2, m: 7}});
+        });
+
+        it("Should calculate sunrise and sunset time for December, 25th 2027 in Auckland (36,51S 174,47E)", function(){
+            sunriser.
+                setDate(new Date(Date.UTC(2027, 11, 25))).
+                setLocation({"latitude":{d:-36, m:-51, s:0}, "longitude":{d:174, m:47, s:0}});
+
+            var res = sunriser.getTimes();
+            expect(res).toBeAroundTime({rise: {h: 17, m: 00} ,set: {h: 7, m: 41}});
         })
     });
 });

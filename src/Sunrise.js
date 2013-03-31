@@ -12,43 +12,55 @@
     phi - latitude (szerokość geograficzna)
  */
 
+//TODO: user should be able to set default values
 function sunrise() {
-    //TODO: create separate converter. Fix names.
-    var that = {},
-        decToRad = function (deg) {
+    var converter = {
+        decToRad: function (deg) {
             return (deg * Math.PI) / 180;
         },
-        radToDec = function (rad) {
+        radToDec: function (rad) {
             return (rad * 180) / Math.PI;
         },
-        timeToDec = function (time) {
-            return (time.h * 240 + time.m * 4 + time.s) / 16;
-        },
-        degToDec = function (deg) {
+        degToDec: function (deg) {
             return deg.d + deg.m / 60 + deg.s / 3600;
         },
-        decToTime = function (deg) {
+        decToTime: function (deg){
             var s = (deg * 240);
             var m = Math.floor(s / 60);
             var h = Math.floor(m / 60);
 
             return {h: h, m: m % 60, s: s % 60};
         },
-        timeToDeg = function (time) {
+        timeToDeg: function (time) {
             var s = time.s * 15;
             var m = time.m * 15 + Math.floor(s / 60);
             var d = time.h * 15 + Math.floor(m / 60);
 
             return {d: d, m: m % 60, s: s % 60};
         },
-        degToTime = function (deg) {
+        degToTime: function (deg) {
             var s = deg.m * 4 + deg.s * 0.066666;
             var m = deg.d * 4 + Math.floor(s / 60);
             var h = Math.floor(m / 60);
 
             return {h: h, m: m % 60, s: s % 60};
-        };
+        }
+    };
 
+    var that = {},
+        decToRad = converter.decToRad,
+        degToDec = converter.degToDec,
+        radToDec = converter.radToDec,
+        decToTime = converter.decToTime,
+        longitude_dec = 0,
+        latitude_rad = 0,
+        julian_days = 0,
+        sigma_rad = 0,
+        EqT = 0,
+        h0_rad = decToRad(-degToDec({d: 0, m: 50, s: 0}));
+    //PARAM -50' for large, near objects like sun
+
+    that.converter = converter;
     /*returns: Number of days calculated since noon on January 1, 4713 BCE.*/
     that.toJD = function (date) {
         var Y = date.getFullYear(),
@@ -78,58 +90,60 @@ function sunrise() {
         var d0 = jd0 - 2451545.0;
         var t = d / 36525;
 
-        /*Alternative method, but less exact according to tables from [*6] and description from [*5]:
-         //GMST2
-         var GMST = 18.697374558 + 24.06570982441908 * d;
-         //GMST2
-         GMST -= 12;
-         */
-
         //GMST
         var GMST = 6.697374558 + 0.06570982441908 * d0 + 0.000026 * (t * t);
         //Normalize to [0-24]
         return (GMST + 24) % 24;
     };
 
-    that.sunTimes = function (location, date, longitude) {
+    that.setH0 = function (deg) {
+        h0_rad = decToRad(-degToDec(deg));
+    };
+
+    that.setLocation = function (location) {
+        var latitude = location.latitude;
+        var longitude = location.longitude;
+
+        longitude_dec = degToDec(longitude);
+        latitude_rad = decToRad(degToDec(latitude));
+
+        return that;
+    };
+
+    //TODO: date validation
+    that.setDate = function (date) {
+        julian_days = that.toJD(date);
         //Note the 0.5!
-        var d = that.toJD(date) - 2451545.0 + 0.5;
+        var d = julian_days - 2451545.0 + 0.5;
         //Mean anomaly of the Sun:
         var g = (357.529 + 0.98560028 * d) % 360;
         //Mean longitude of the Sun:
         var q = (280.459 + 0.98564736 * d)  % 360;
         //Geocentric apparent ecliptic longitude of the Sun (adjusted for aberration):
-        var l = (q + 1.915 * Math.sin(decToRad(g)) + 0.020 * Math.sin(decToRad(2 * g))) % 360;
+        var l_rad = decToRad((q + 1.915 * Math.sin(decToRad(g)) + 0.020 * Math.sin(decToRad(2 * g))) % 360);
+        //var r = (1.00014 - 0.01671 * Math.cos(decToRad(g)) - 0.00014 * Math.cos(decToRad(2 * g)));
+        var e_rad = decToRad(23.439 - 0.00000036 * d);
 
-        var r = (1.00014 - 0.01671 * Math.cos(decToRad(g)) - 0.00014 * Math.cos(decToRad(2 * g)));
-        var e = 23.439 - 0.00000036 * d;
+        var alpha =  ((radToDec(Math.atan2(Math.cos(e_rad) * Math.sin(l_rad), Math.cos(l_rad))) / 15) + 24) % 24;
+        EqT = q / 15 - alpha;
 
+        sigma_rad = Math.asin(Math.sin(e_rad) * Math.sin(l_rad));
 
-        var alpha =  (((radToDec(Math.atan2(Math.cos(decToRad(e)) * Math.sin(decToRad(l)), Math.cos(decToRad(l)))) * 24) / 360) + 24) % 24;
-
-        var EqT = q / 15 - alpha;
-
-        //DEKLINACJA:
-        var sigma = radToDec(Math.asin(Math.sin(decToRad(e)) * Math.sin(decToRad(l))));
-        var phi = degToDec(location);
-        var h0 = -degToDec({d:0, m:50, s:0});
-
-        var t = Math.acos((Math.sin(decToRad(h0)) - (Math.sin(decToRad(sigma)) * Math.sin(decToRad(phi)))) / (Math.cos(decToRad(sigma)) * Math.cos(decToRad(phi))));
-
-        var set = radToDec(t) + 180;
-        var rise = 360 - set;
-        set -= (EqT * 15);
-        rise -= (EqT * 15);
-
-        set -= longitude.d;
-        rise -= longitude.d;
-        var time = set - rise;
-
-        return {rise: decToTime(rise), set: decToTime(set), daytime: decToTime(time)};
+        return that;
     };
 
+    that.getTimes = function () {
+        var time = Math.acos((Math.sin(h0_rad) - (Math.sin(sigma_rad) * Math.sin(latitude_rad))) /
+            (Math.cos(sigma_rad) * Math.cos(latitude_rad)));
+        var set = 180 + radToDec(time);
+        var rise = 360 - set;
+        set  -= ((EqT * 15) + longitude_dec);
+        rise -=  ((EqT * 15) + longitude_dec);
+        var duration = set - rise;
+
+        //WARN: rise or set time may be in another day!. It's simplified by % 360.
+        return {rise: decToTime((rise + 360) % 360), set: decToTime(set % 360), daytime: decToTime(duration)};
+    };
     return that;
 }
 
-var s = sunrise();
-console.log(s.sunTimes({d: 100, m: 0, s: 0}, new Date(Date.UTC(2013, 5, 22)), {d: 0}));
