@@ -101,11 +101,8 @@ function sunrise() {
     };
 
     that.setLocation = function (location) {
-        var latitude = location.latitude;
-        var longitude = location.longitude;
-
-        longitude_dec = degToDec(longitude);
-        latitude_rad = decToRad(degToDec(latitude));
+        longitude_dec = degToDec(location.longitude);
+        latitude_rad = decToRad(degToDec(location.latitude));
 
         return that;
     };
@@ -141,9 +138,8 @@ function sunrise() {
         rise -=  ((EqT * 15) + longitude_dec);
         var duration = set - rise;
 
-        //WARN: rise or set time may be in another day!. It's simplified by % 360.
+        //WARN: rise or set time may be during previous/next day!
         return {rise: decToTime((rise + 360) % 360), set: decToTime(set % 360), daytime: decToTime(duration)};
     };
     return that;
 }
-
