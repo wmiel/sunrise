@@ -43,10 +43,10 @@ describe("Sunrise library", function () {
             };
 
             it("should be valid for 1st, 3rd, 24th, 28th of January 2012", function(){
-               for( var d in [1,3,24,28] ){
-                var val = sunriser.calcGMST(new Date(Date.UTC(2012, 0, d)));
-                expect(val).toBeCloseTo(tabledGMST(d,0));
-               }
+                for( var d in [1,3,24,28] ){
+                    var val = sunriser.calcGMST(new Date(Date.UTC(2012, 0, d)));
+                    expect(val).toBeCloseTo(tabledGMST(d,0));
+                }
             });
 
             it("should be valid for 1st, 3rd, 24th, 28th of September 2012", function(){
@@ -63,5 +63,11 @@ describe("Sunrise library", function () {
                 }
             });
         });
+    });
+
+    describe("Sunrise and sunset calculation", function(){
+        it("Should calculate sunrise and sunset time for March, 18th 2012 in Krakow (50°3′41″N 19°56′18″E)", function(){
+            console.log(sunriser.sunTimes({d:50, m:3, s:41}, new Date(Date.UTC(2012, 2, 18))));
+        })
     });
 });
