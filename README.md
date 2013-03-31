@@ -2,8 +2,16 @@ Sunrise
 =======
 It's simple JavaScript module which may be used to sunrise and sunset time calculation in given place.
 
-Usage:
 
+Todolist:
+
+- add google maps visualization / location selection
+- calculate altitude of sun at given time
+
+
+
+Usage:
+-
     var sunriser = sunrise();
     sunriser.
         setDate(new Date(Date.UTC(2012, 2, 18))).
@@ -14,10 +22,11 @@ Usage:
       set: { h: 16, m: 50, s: 8.266904495882045 },
       daytime: { h: 12, m: 3, s: 53.5673237583178 } }
     */
-    
+ 
+ 
 Calculations based on:
-
-- http://www.navipedia.pl/,
+-
+1. http://www.navipedia.pl/,
 - "Astronomiczne oblicznenia nie tylko dla geografów" by Kazimierz Borkowski Uniwersytet Mikołaja Kopernika w Toruniu, Toruń 1991.
 - http://www.cs.utsa.edu/~cs1063/projects/Spring2011/Project1/jdn-explanation.html
 - http://quasar.as.utexas.edu/BillInfo/JulianDatesG.html
