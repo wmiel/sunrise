@@ -14,6 +14,8 @@
 
 //TODO: user should be able to set default values
 function sunrise() {
+    "use strict";
+
     var converter = {
         decToRad: function (deg) {
             return (deg * Math.PI) / 180;
@@ -24,24 +26,24 @@ function sunrise() {
         degToDec: function (deg) {
             return deg.d + deg.m / 60 + deg.s / 3600;
         },
-        decToTime: function (deg){
-            var s = (deg * 240);
-            var m = Math.floor(s / 60);
-            var h = Math.floor(m / 60);
+        decToTime: function (deg) {
+            var s = (deg * 240),
+                m = Math.floor(s / 60),
+                h = Math.floor(m / 60);
 
             return {h: h, m: m % 60, s: s % 60};
         },
         timeToDeg: function (time) {
-            var s = time.s * 15;
-            var m = time.m * 15 + Math.floor(s / 60);
-            var d = time.h * 15 + Math.floor(m / 60);
+            var s = time.s * 15,
+                m = time.m * 15 + Math.floor(s / 60),
+                d = time.h * 15 + Math.floor(m / 60);
 
             return {d: d, m: m % 60, s: s % 60};
         },
         degToTime: function (deg) {
-            var s = deg.m * 4 + deg.s * 0.066666;
-            var m = deg.d * 4 + Math.floor(s / 60);
-            var h = Math.floor(m / 60);
+            var s = deg.m * 4 + deg.s * 0.066666,
+                m = deg.d * 4 + Math.floor(s / 60),
+                h = Math.floor(m / 60);
 
             return {h: h, m: m % 60, s: s % 60};
         }
@@ -72,26 +74,25 @@ function sunrise() {
             M += 12;
         }
         //Calc. leap years
-        var A = Math.floor(Y / 100);
-        var B = Math.floor(A / 4);
-        var C = 2 - A + B;//valid only for dates after 1.10.1582
-        var E = Math.floor(365.25 * (Y + 4716));
-        var F = Math.floor(30.6001 * (M + 1));
+        //C valid only for dates after 1.10.1582
+        var A = Math.floor(Y / 100),
+            B = Math.floor(A / 4),
+            C = 2 - A + B,
+            E = Math.floor(365.25 * (Y + 4716)),
+            F = Math.floor(30.6001 * (M + 1));
 
         return C + D + E + F - 1524.5;
     };
 
     //Function calculates GMST at 0h
     that.calcGMST = function (date) {
-        var H = 12;
-        var jd0 = that.toJD(date);
-        var jd = jd0 + H / 24;
-        var d = jd - 2451545.0;
-        var d0 = jd0 - 2451545.0;
-        var t = d / 36525;
-
-        //GMST
-        var GMST = 6.697374558 + 0.06570982441908 * d0 + 0.000026 * (t * t);
+        var H = 12,
+            jd0 = that.toJD(date),
+            jd = jd0 + H / 24,
+            d = jd - 2451545.0,
+            d0 = jd0 - 2451545.0,
+            t = d / 36525,
+            GMST = 6.697374558 + 0.06570982441908 * d0 + 0.000026 * (t * t);
         //Normalize to [0-24]
         return (GMST + 24) % 24;
     };

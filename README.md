@@ -9,7 +9,6 @@ Todolist:
 - calculate altitude of sun at given time
 
 
-
 Usage:
 -
     var sunriser = sunrise();
