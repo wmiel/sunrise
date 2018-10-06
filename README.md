@@ -33,4 +33,4 @@ Calculations based on:
 - http://books.google.pl/books?id=ZnNrepLivYEC&lpg=PA17&ots=tmzu0w_Opi&dq=GMST%200hUT&hl=pl&pg=PA17#v=onepage&q=GMST%200hUT&f=false
 - http://aa.usno.navy.mil/faq/docs/SunApprox.php
 
-Tests created in Jasmine (http://pivotal.github.com/jasmine/).
+Tests created in Jasmine (https://jasmine.github.io/).
